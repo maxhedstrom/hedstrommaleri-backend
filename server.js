@@ -8,7 +8,6 @@ console.log('SMTP_USER  =', process.env.SMTP_USER);
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
-const fs = require('fs/promises');
 const path = require('path');
 const multer = require('multer');
 const nodemailer = require('nodemailer');
