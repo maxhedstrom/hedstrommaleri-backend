@@ -92,11 +92,12 @@ const upload = multer({
 
 // Sökvärden för JSON-filer
 const filePaths = {
-  homeServices: path.join(dataDir, 'homeServices.json'),
+  homeServices: path.join(dataDir, 'homeservices.json'),
   personal: path.join(dataDir, 'personal.json'),
   services: path.join(dataDir, 'services.json'),
   projekt: path.join(dataDir, 'projekt.json'),
   kontakt: path.join(dataDir, 'kontakt.json'),
+  admin: path.join(dataDir, 'adminpassword.json'),
 };
 
 // ==============================
