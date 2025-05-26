@@ -1,5 +1,8 @@
 // Ladda in miljövariabler 
-require('dotenv').config();
+require('dotenv').config(); // laddar .env
+
+console.log('CORS_ORIGIN =', process.env.CORS_ORIGIN);
+console.log('SMTP_USER  =', process.env.SMTP_USER);
 
 // Importera nödvändiga moduler
 const express = require('express');
@@ -13,24 +16,42 @@ const bcrypt = require('bcrypt');
 const rateLimit = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
 
+const fs = require('fs/promises');
+const path = require('path');
+
+console.log('===== DEBUG INFO =====');
+console.log('Server startar i katalog:', __dirname);
+
+const dataDir = path.join(__dirname, 'data');
+console.log('Förväntad data-mapp:', dataDir);
+
+// Kolla om data-mappen finns och visa dess innehåll
+fs.readdir(dataDir)
+  .then(files => {
+    console.log('Filer i data-mappen:', files);
+  })
+  .catch(err => {
+    console.error('Kunde inte läsa data-mappen:', err);
+  });
+console.log('======================');
+
 // Applikationsinställningar
 const app = express();
 const port = process.env.PORT || 5000;
-const dataDir = path.join(__dirname, 'data');
 const uploadDir = path.join(__dirname, 'public', 'uploads');
 
 // Lita på proxy (t.ex. Heroku, Nginx) för korrekt req.secure
 app.set('trust proxy', 1);
 
 // Endast om NODE_ENV=production: omdirigera HTTP → HTTPS
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV === 'production' && process.env.FORCE_HTTPS === 'true') {
   app.use((req, res, next) => {
     if (req.secure) return next();
-    // Använd vanlig strängkonkatenering för https-redirect
     const redirectUrl = 'https://' + req.headers.host + req.originalUrl;
     return res.redirect(301, redirectUrl);
   });
 }
+
 
 // Säkerhetsheaders
 app.use(helmet());
