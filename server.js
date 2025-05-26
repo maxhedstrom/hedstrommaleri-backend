@@ -242,7 +242,7 @@ app.post(
     }
     const { password } = req.body;
     try {
-      const data = await fs.readFile(path.join(dataDir,'adminPassword.json'),'utf8');
+      const data = await fs.readFile(path.join(dataDir,'adminpassword.json'),'utf8');
       const { hash } = JSON.parse(data);
       const match = await bcrypt.compare(password, hash);
       if (match) return res.json({ success: true });
