@@ -16,6 +16,11 @@ const { body, validationResult } = require('express-validator');
 
 const fs = require('fs/promises');
 const path = require('path');
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://hedstrommaleri.se'
+];
+
 
 console.log('===== DEBUG INFO =====');
 console.log('Server startar i katalog:', __dirname);
@@ -54,13 +59,18 @@ if (process.env.NODE_ENV === 'production' && process.env.FORCE_HTTPS === 'true')
 // Säkerhetsheaders
 app.use(helmet());
 
-// CORS: endast din frontend
-app.use(
-  cors({
-    origin: process.env.CORS_ORIGIN || '*',
-    optionsSuccessStatus: 200
-  })
-);
+
+app.use(cors({
+  origin: function(origin, callback) {
+    // Tillåt om origin är undefined (t.ex. curl, Postman) eller finns i listan
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS-policy tillåter inte denna origin: ' + origin));
+    }
+  },
+  optionsSuccessStatus: 200
+}));
 
 // JSON-parser
 app.use(express.json());
@@ -94,7 +104,7 @@ const upload = multer({
 const filePaths = {
   homeServices: path.join(dataDir, 'homeservices.json'),
   personal: path.join(dataDir, 'personal.json'),
-  // services: path.join(dataDir, 'services.json'),
+  services: path.join(dataDir, 'services.json'),
   projekt: path.join(dataDir, 'projekt.json'),
   kontakt: path.join(dataDir, 'kontakt.json'),
   admin: path.join(dataDir, 'adminpassword.json'),
@@ -186,7 +196,6 @@ app.post('/api/upload-image', upload.single('image'), (req, res) => {
   const url = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
   res.json({ url });
 });
-
 // ==============================
 // Skicka e-post
 // ==============================
@@ -204,29 +213,38 @@ app.post(
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
+
     const { name, email, subject, message } = req.body;
+
     try {
       const transporter = nodemailer.createTransport({
-        service: process.env.MAIL_SERVICE || 'icloud',
+        host: 'smtp.mail.me.com',
+        port: 587,
+        secure: false,
         auth: {
           user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS
-        }
+          pass: process.env.SMTP_PASS,
+        },
       });
+
       const mailOptions = {
         from: process.env.MAIL_FROM,
         to: process.env.MAIL_TO,
         subject: `Kontaktförfrågan: ${subject}`,
-        text: `Namn: ${name}\nE-post: ${email}\n\nMeddelande:\n${message}`
+        text: `Namn: ${name}\nE-post: ${email}\n\nMeddelande:\n${message}`,
       };
+
       await transporter.sendMail(mailOptions);
+
       res.json({ success: true, message: 'E-post skickat!' });
+
     } catch (err) {
-      console.error('Fel vid skickande av e-post:', err);
-      res.status(500).json({ error: 'Misslyckades att skicka e-post.' });
+      console.error('Fel vid skickande av e-post:', err.toString(), err.stack);
+      res.status(500).json({ error: 'Misslyckades att skicka e-post.', detail: err.message });
     }
   }
 );
+
 
 // ==============================
 // Admin-login
